@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision Lab · C10 Interactive Decision Webpage</title>
+<meta name="description" content="Interactive decision-making under uncertainty: Maximax, Maximin, Minimax Regret, EMV, staged filtering and flow diagram.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#161616; --ink-soft:#4a4a4a; --muted:#7b7770;
+    --paper:#fbf8f3; --card:#ffffff; --line:#e6e0d6; --grid:#ece6dc;
+    --orange:#f7834f; --orange-soft:#ffe4d6;
+    --lav:#ece3fb; --lav-deep:#b9a3ec;
+    --pink:#f9dfee; --mint:#dcf1e6; --mint-deep:#5fae86;
+    --sky:#e0ebfa; --butter:#fbf1cf;
+    --bad:#c8475b; --bad-soft:#fde4e8;
+    --radius:18px; --shadow:0 1px 0 rgba(0,0,0,.04),0 8px 24px -12px rgba(40,30,20,.18);
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Archivo',system-ui,-apple-system,Segoe UI,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  button,input,select{font:inherit;color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+
+  /* ---------- NAV ---------- */
+  header.nav{position:sticky;top:0;z-index:20;background:rgba(251,248,243,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav .wrap{display:flex;align-items:center;gap:20px;height:66px}
+  .logo{font-weight:900;letter-spacing:.02em;font-size:20px;text-decoration:none;display:flex;align-items:center;gap:8px}
+  .logo i{width:14px;height:14px;background:var(--orange);border-radius:50%;display:inline-block;box-shadow:0 0 0 3px var(--orange-soft)}
+  .nav nav{display:flex;gap:22px;margin-left:auto;font-size:14px;font-weight:500}
+  .nav nav a{text-decoration:none;color:var(--ink-soft)} .nav nav a:hover{color:var(--ink)}
+  .pill{border-radius:999px;padding:10px 20px;font-weight:600;font-size:14px;border:1.5px solid var(--ink);background:transparent;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:transform .12s, background .2s}
+  .pill:hover{transform:translateY(-1px)}
+  .pill.dark{background:var(--ink);color:#fff}
+  .pill.orange{background:var(--orange);border-color:var(--orange);color:#fff;box-shadow:0 8px 20px -8px rgba(247,131,79,.7)}
+  .pill.small{padding:6px 14px;font-size:13px}
+  .pill.ghost{border-color:var(--line);background:#fff}
+  .pill:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+  /* ---------- HERO ---------- */
+  .hero{position:relative;overflow:hidden;padding:56px 0 70px}
+  .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:30px;align-items:center}
+  .tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;border:1.5px solid var(--ink);padding:5px 10px;background:#fff}
+  .tag b{background:var(--ink);color:#fff;width:18px;height:18px;display:grid;place-items:center;font-size:11px}
+  h1{font-weight:900;font-size:clamp(46px,7.4vw,96px);line-height:.92;letter-spacing:-.035em;margin:22px 0 20px;text-transform:uppercase}
+  h1 span{display:block}
+  h1 .soft{color:var(--orange)}
+  .hero p.lead{font-size:17px;color:var(--ink-soft);max-width:470px;margin:0 0 26px}
+  .hero-cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .hero-art{position:relative;height:340px}
+  .gridbg{position:absolute;inset:0;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(7,1fr)}
+  .gridbg div{border:1px solid var(--grid);margin:-.5px}
+  .gridbg div.f1{background:var(--lav)} .gridbg div.f2{background:var(--pink)} .gridbg div.f3{background:var(--mint)} .gridbg div.f4{background:var(--butter)}
+  .decision-pill{position:absolute;left:4%;right:6%;top:38%;height:110px;border-radius:999px;background:var(--lav);border:2px solid var(--ink);display:flex;align-items:center;gap:20px;padding:0 26px 0 14px;box-shadow:6px 6px 0 var(--ink)}
+  .decision-pill .disc{flex:0 0 82px;height:82px;border-radius:50%;background:var(--orange);display:grid;place-items:center;border:2px solid var(--ink);position:relative}
+  .decision-pill .disc::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--orange);opacity:.35}
+  .decision-pill .disc svg{width:36px;height:36px}
+  .decision-pill small{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+  .decision-pill strong{display:block;font-size:clamp(17px,2.2vw,24px);font-weight:800;line-height:1.1;overflow:hidden;text-overflow:ellipsis}
+  .bars{display:flex;gap:4px;align-items:center;margin-left:auto}
+  .bars i{width:4px;border-radius:3px;background:var(--ink);opacity:.75}
+  .spark{position:absolute;font-size:30px}
+  .stamp{position:absolute;right:2%;top:2%;width:104px;height:104px;border-radius:50%;border:1.5px dashed var(--ink);display:grid;place-items:center;font-family:var(--mono);font-size:10px;text-align:center;letter-spacing:.06em;background:#fff;transform:rotate(-12deg)}
+
+  /* ---------- SECTIONS ---------- */
+  section.block{padding:34px 0}
+  .sec-head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .num{font-family:var(--mono);font-size:12px;border:1.5px solid var(--ink);padding:3px 8px;background:#fff}
+  h2{font-size:clamp(26px,3.4vw,38px);font-weight:900;letter-spacing:-.02em;margin:0;text-transform:uppercase;line-height:1}
+  .sec-head p{margin:0;color:var(--muted);font-size:14.5px;flex-basis:100%}
+  .card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  h3{margin:0 0 6px;font-size:18px;font-weight:800}
+  .note{color:var(--muted);font-size:13.5px}
+
+  /* examples */
+  .examples{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .ex{all:unset;cursor:pointer;border:1.5px solid var(--line);border-radius:var(--radius);padding:18px;background:#fff;display:flex;flex-direction:column;gap:6px;transition:.18s;box-shadow:var(--shadow)}
+  .ex:hover{transform:translateY(-2px);border-color:var(--ink)}
+  .ex:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+  .ex .emoji{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:22px}
+  .ex b{font-size:16px} .ex span{font-size:13px;color:var(--muted)}
+  .ex[aria-pressed="true"]{border-color:var(--ink);box-shadow:5px 5px 0 var(--ink)}
+
+  /* input table */
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .toolbar label{font-size:13px;color:var(--ink-soft);display:flex;align-items:center;gap:8px}
+  .toolbar input{border:1.5px solid var(--line);border-radius:10px;padding:7px 10px;width:150px;background:#fff}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:separate;border-spacing:0;width:100%;font-size:14px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  thead th{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);font-weight:600;background:#faf7f1}
+  thead th:first-child{border-top-left-radius:12px} thead th:last-child{border-top-right-radius:12px}
+  td.numc,th.numc{text-align:right;font-variant-numeric:tabular-nums}
+  #payoffTable{min-width:560px}
+  #payoffTable input{width:100%;min-width:84px;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;transition:border .15s, box-shadow .15s}
+  #payoffTable input:focus{outline:none;border-color:var(--lav-deep);box-shadow:0 0 0 3px var(--lav)}
+  #payoffTable input.name{font-weight:700;min-width:120px}
+  #payoffTable input.pay{text-align:right;font-variant-numeric:tabular-nums}
+  #payoffTable tr.prob-row td,#payoffTable tr.prob-row th{background:var(--sky)}
+  #payoffTable tr.prob-row input{text-align:right;background:#fff}
+  #payoffTable input.invalid{border-color:var(--bad);background:var(--bad-soft)}
+  .cellwrap{display:flex;gap:6px;align-items:center}
+  .x{all:unset;cursor:pointer;width:26px;height:26px;flex:0 0 26px;border-radius:50%;display:grid;place-items:center;font-size:14px;color:var(--ink-soft);border:1.5px solid var(--line);background:#fff}
+  .x:hover{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+  .x:disabled{opacity:.3;cursor:not-allowed}
+  .x:focus-visible{outline:2px solid var(--orange)}
+  .status{margin-top:14px;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+  .msg{padding:9px 12px;border-radius:12px;display:flex;gap:8px;align-items:flex-start}
+  .msg.ok{background:var(--mint);color:#21573c}
+  .msg.err{background:var(--bad-soft);color:#8a2234}
+  .msg.warn{background:var(--butter);color:#6d5512}
+
+  /* criteria cards */
+  .crit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .crit{border-radius:var(--radius);padding:20px;border:1.5px solid var(--ink);background:#fff;position:relative;overflow:hidden}
+  .crit .chip{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft)}
+  .crit .win{font-size:22px;font-weight:900;margin:8px 0 2px;line-height:1.15}
+  .crit .val{font-family:var(--mono);font-size:13px}
+  .crit .tie{display:inline-block;margin-top:6px;background:var(--orange-soft);color:#9a4219;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px}
+  .crit p{font-size:13px;color:var(--ink-soft);margin:10px 0 0}
+  .crit ol{margin:10px 0 0;padding-left:20px;font-size:13px}
+  .crit ol li{margin:2px 0}
+  .crit.c-max{background:var(--pink)} .crit.c-min{background:var(--mint)} .crit.c-regret{background:var(--lav)} .crit.c-emv{background:var(--butter)}
+  .crit.unavailable{background:#f4f1ec;border-style:dashed}
+  td.best{background:var(--mint);font-weight:800}
+  .check{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px}
+  details{margin-top:14px}
+  summary{cursor:pointer;font-weight:700;font-size:14px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .two>*{min-width:0}
+
+  /* staged filtering */
+  .stages{list-style:none;padding:0;margin:0 0 14px;display:flex;flex-direction:column;gap:10px;counter-reset:st}
+  .stage{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fff;counter-increment:st}
+  .stage::before{content:"Stage " counter(st);font-family:var(--mono);font-size:12px;background:var(--ink);color:#fff;padding:4px 9px;border-radius:8px}
+  .stage label{font-size:13px;color:var(--ink-soft);display:flex;gap:6px;align-items:center}
+  .stage select,.stage input{border:1.5px solid var(--line);border-radius:10px;padding:7px 9px;background:#fff}
+  .stage input{width:70px}
+  .stage input.invalid{border-color:var(--bad);background:var(--bad-soft)}
+  .stage .actions{margin-left:auto;display:flex;gap:6px}
+  .outcome{margin:16px 0;padding:16px 20px;border-radius:999px;background:var(--orange);color:#fff;font-weight:800;font-size:17px;display:flex;align-items:center;gap:12px;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink)}
+  .outcome.neutral{background:var(--lav);color:var(--ink)}
+  .outcome .dot{width:12px;height:12px;border-radius:50%;background:#fff;flex:0 0 12px}
+
+  /* survivor track */
+  .track td,.track th{text-align:center}
+  .track th:first-child,.track td:first-child{text-align:left}
+  .dotc{display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--mint-deep)}
+  .dotc.final{background:var(--orange);box-shadow:0 0 0 3px var(--orange-soft)}
+  .xmark{color:var(--bad);font-weight:900}
+  .gone{display:inline-block;width:10px;height:2px;background:var(--line)}
+
+  /* flow diagram */
+  .flow{display:flex;align-items:stretch;gap:0;padding:8px 4px 4px;min-width:min-content}
+  .fstep{display:flex;flex-direction:column;align-items:center;width:230px;flex:0 0 230px;position:relative}
+  .fstep .rule{font-size:12px;color:var(--ink-soft);background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;width:100%;min-height:86px}
+  .fstep .rule b{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink)}
+  .vline{width:0;height:18px;border-left:2px solid var(--ink)}
+  .node{width:100%;border:2px solid var(--ink);border-radius:16px;padding:12px;background:var(--mint);font-size:14px;text-align:center;font-weight:600}
+  .node small{display:block;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);font-weight:400;margin-bottom:4px}
+  .node.start{background:var(--sky)}
+  .node.final{background:var(--orange);color:#fff;box-shadow:4px 4px 0 var(--ink)}
+  .node.final small{color:#fff}
+  .dline{width:0;height:26px;border-left:2px dashed var(--bad)}
+  .elim{width:88%;border:1.5px dashed var(--bad);border-radius:12px;padding:8px 10px;font-size:13px;text-align:center;background:var(--bad-soft);color:#7a1f30}
+  .elim.none{border-color:var(--line);background:#f6f3ee;color:var(--muted)}
+  .elim small{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+  .arrow{flex:0 0 46px;display:flex;align-items:flex-start;justify-content:center;position:relative}
+  .arrow span{position:absolute;top:var(--ay,140px);left:4px;right:4px;height:2px;background:var(--ink)}
+  .arrow span::after{content:"";position:absolute;right:-2px;top:-5px;border-left:9px solid var(--ink);border-top:6px solid transparent;border-bottom:6px solid transparent}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-soft);margin-top:12px}
+  .legend i{display:inline-block;width:22px;vertical-align:middle;margin-right:6px}
+
+  /* AI record */
+  .ai{display:flex;gap:22px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--ink);color:#fff;border-radius:26px;padding:28px 30px;position:relative;overflow:hidden}
+  .ai h2{color:#fff}
+  .ai p{margin:8px 0 0;color:#cfcac2;max-width:560px;font-size:14.5px}
+  .ai a.pill{background:var(--lav);color:var(--ink);border-color:var(--lav);font-size:15px;padding:13px 22px}
+  footer{padding:30px 0 50px;color:var(--muted);font-size:13px}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;border-top:1px solid var(--line);padding-top:18px}
+
+  [hidden]{display:none!important}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+  @media (max-width:900px){
+    .hero .wrap{grid-template-columns:1fr}
+    .hero-art{height:260px}
+    .nav nav{display:none}
+    .two{grid-template-columns:1fr}
+  }
+  @media (max-width:640px){
+    .wrap{padding:0 14px}
+    .card{padding:16px}
+    .flow{flex-direction:column;align-items:center;min-width:0}
+    .fstep{width:100%;max-width:340px;flex:none}
+    .arrow{flex:0 0 40px;width:100%}
+    .arrow span{top:0;bottom:0;left:50%;right:auto;width:2px;height:auto}
+    .arrow span::after{right:auto;left:-5px;top:auto;bottom:-2px;border-top:9px solid var(--ink);border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:0}
+    .stage .actions{margin-left:0}
+    .outcome{border-radius:18px}
+    .decision-pill{height:90px}
+    .decision-pill .disc{flex-basis:64px;height:64px}
+    .stamp{display:none}
+  }
+  @media print{ header.nav,.hero,.ai a,.toolbar,.x,.stage .actions,#addStage{display:none!important} body{background:#fff} }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#top"><i></i>DECISION LAB</a>
+    <nav aria-label="Sections">
+      <a href="#examples">Examples</a>
+      <a href="#model">Payoff table</a>
+      <a href="#criteria">Criteria</a>
+      <a href="#filtering">Staged filtering</a>
+      <a href="#flow">Flow diagram</a>
+    </nav>
+    <a class="pill dark small ai-link" href="#" target="_blank" rel="noopener">AI conversation ↗</a>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="tag"><b>◆</b> Grade 10 · Global Economics · C10</span>
+        <h1><span>Compare it.</span><span>Filter it.</span><span class="soft">Decide it.</span></h1>
+        <p class="lead">Enter alternatives, states of nature, payoffs and probabilities. Every criterion, filtering stage and the flow diagram update instantly as you type.</p>
+        <div class="hero-cta">
+          <a class="pill orange" href="#examples">Start deciding →</a>
+          <a class="pill" href="#model">Open the payoff table</a>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="gridbg" id="gridbg"></div>
+        <div class="stamp">DECISIONS<br>UNDER<br>UNCERTAINTY</div>
+        <span class="spark" style="left:8%;top:10%">✦</span>
+        <span class="spark" style="right:14%;bottom:6%;font-size:22px">✦</span>
+        <div class="decision-pill">
+          <div class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-6 7v6l-4 2v-8z"/></svg></div>
+          <div style="min-width:0">
+            <small>Staged filtering result</small>
+            <strong id="heroDecision">—</strong>
+          </div>
+          <div class="bars" id="bars"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1. EXAMPLES -->
+  <section class="block" id="examples">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">01</span><h2>Choose a problem</h2>
+        <p>Load a preloaded decision problem, then edit anything. Each example shows different winners, ties and a full filtering sequence.</p></div>
+      <div class="examples" id="exampleList"></div>
+    </div>
+  </section>
+
+  <!-- 2. MODEL -->
+  <section class="block" id="model">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">02</span><h2>Payoff table</h2>
+        <p>Rows are alternatives, columns are states of nature. The blue row holds the probability of each state (must add up to 1).</p></div>
+      <div class="card">
+        <div class="toolbar">
+          <button class="pill small dark" id="addAlt" type="button">+ Alternative</button>
+          <button class="pill small dark" id="addState" type="button">+ State of nature</button>
+          <button class="pill small ghost" id="equalProb" type="button">Equal probabilities</button>
+          <label>Payoff unit <input id="unit" value="thousand USD" aria-label="Payoff unit"></label>
+        </div>
+        <div class="scroll"><table id="payoffTable" aria-label="Payoff table"></table></div>
+        <div class="status" id="validation" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. CRITERIA -->
+  <section class="block" id="criteria">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">03</span><h2>Decision criteria</h2>
+        <p>Each criterion compares the complete original set of alternatives. Values within 10⁻⁹ are treated as ties. Results show two decimals; calculations keep full precision.</p></div>
+      <div class="crit-grid" id="critCards"></div>
+
+      <div class="two" style="margin-top:16px">
+        <div class="card">
+          <h3>Summary statistics</h3>
+          <p class="note" style="margin:0 0 10px">Best value in each column is highlighted. Values in <span class="unitTxt"></span>.</p>
+          <div class="scroll" id="summary"></div>
+        </div>
+        <div class="card">
+          <h3>Who wins under each criterion?</h3>
+          <p class="note" style="margin:0 0 10px">A check marks every recommended alternative (ties get more than one).</p>
+          <div class="scroll" id="scoreboard"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h3>Regret table</h3>
+        <p class="note" style="margin:0 0 10px">Regret = best payoff in that state (among all original alternatives) − the alternative's payoff.</p>
+        <div class="scroll" id="regretTable"></div>
+        <details>
+          <summary>How is each criterion calculated?</summary>
+          <p class="note"><b>Maximax</b> (optimistic): find each alternative's maximum payoff and pick the highest. <b>Maximin</b> (pessimistic): find each alternative's minimum payoff and pick the highest. <b>Minimax Regret</b>: find each alternative's largest regret and pick the lowest. <b>EMV / Bayes</b>: multiply each payoff by its state's probability, add them up and pick the highest expected value.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. STAGED FILTERING -->
+  <section class="block" id="filtering">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">04</span><h2>Staged filtering</h2>
+        <p>Stages are applied in order, using only the survivors of the previous stage. Eliminated alternatives never come back. Statistics come from the complete original table. Ties at the cutoff all survive.</p></div>
+      <div class="card">
+        <ol class="stages" id="stages"></ol>
+        <button class="pill small dark" id="addStage" type="button">+ Add stage</button>
+        <div id="filterOut" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. FLOW -->
+  <section class="block" id="flow">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">05</span><h2>Flow diagram</h2>
+        <p>Solid arrows carry the survivors forward; dashed red branches show who is eliminated at each stage. The orange box is the final outcome.</p></div>
+      <div class="card">
+        <div class="scroll" tabindex="0" role="region" aria-label="Flow diagram of the staged filtering"><div class="flow" id="flowDiagram"></div></div>
+        <div class="legend">
+          <span><i style="border-top:2px solid var(--ink)"></i>Survivors move on</span>
+          <span><i style="border-top:2px dashed var(--bad)"></i>Eliminated at that stage</span>
+          <span><i style="height:12px;background:var(--orange);border-radius:4px"></i>Final outcome</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. AI RECORD -->
+  <section class="block" id="ai">
+    <div class="wrap">
+      <div class="ai">
+        <div>
+          <span class="tag" style="background:transparent;color:#fff;border-color:#fff"><b style="background:#fff;color:var(--ink)">◆</b> AI development record</span>
+          <h2 style="margin-top:14px">Built with AI</h2>
+          <p>This webpage was developed with the help of an AI assistant. The full conversation used to design and code it is available at the link.</p>
+        </div>
+        <a class="pill ai-link" href="#" target="_blank" rel="noopener">View the AI conversation ↗</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Decision Lab · Grade 10 · Term 1 · Criterion 10</span>
+    <a class="ai-link" href="#" target="_blank" rel="noopener">AI development conversation ↗</a>
+  </div>
+</footer>
+
+<script>
+/* =====================================================================
+   PASTE YOUR PUBLIC AI CONVERSATION LINK HERE (between the quotes)
+   ===================================================================== */
+const AI_CONVERSATION_URL = "https://claude.ai/share/994ac21a-6cfb-4377-ad22-f41e0c5a41f2";
+
+(() => {
+  'use strict';
+  const EPS = 1e-9;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt = n => Number.isFinite(n) ? (Math.abs(n) < 0.005 ? '0.00' : n.toFixed(2)) : '—';
+  const num = raw => String(raw).trim() === '' ? NaN : Number(raw);
+  let serial = 0; const uid = () => 'i' + (++serial);
+
+  document.querySelectorAll('.ai-link').forEach(a => a.href = AI_CONVERSATION_URL);
+
+  const CRIT = {
+    max:    {name:'Maximax',        stat:'Max payoff', dir: 1, cls:'c-max',    expl:'Optimistic: choose the alternative with the highest best-case payoff.'},
+    min:    {name:'Maximin',        stat:'Min payoff', dir: 1, cls:'c-min',    expl:'Pessimistic: choose the alternative with the highest worst-case payoff.'},
+    regret: {name:'Minimax Regret', stat:'Max regret', dir:-1, cls:'c-regret', expl:'Choose the alternative whose largest regret (missed opportunity) is smallest.'},
+    emv:    {name:'EMV / Bayes',    stat:'EMV',        dir: 1, cls:'c-emv',    expl:'Probabilistic: choose the highest probability-weighted average payoff.'}
+  };
+  const ORDER = ['max','min','regret','emv'];
+
+  /* ---------------- PRELOADED EXAMPLES ---------------- */
+  const EXAMPLES = {
+    coffee: {
+      title:'Coffee shop expansion', emoji:'☕', bg:'var(--pink)',
+      desc:'4 options · 3 demand levels · every criterion picks a different winner',
+      unit:'thousand USD',
+      alts:['Small kiosk','Medium café','Large café','Food truck'],
+      states:['Low demand','Medium demand','High demand'], p:[0.3,0.5,0.2],
+      pay:[[20,35,50],[5,60,90],[-40,50,160],[15,45,70]],
+      stages:[['min','keep',3],['emv','best',1]]
+    },
+    farm: {
+      title:'Crop planting season', emoji:'🌾', bg:'var(--mint)',
+      desc:'5 options · weather states · ties in Maximin, EMV and at a cutoff',
+      unit:'thousand USD',
+      alts:['Corn','Wheat','Soybeans','Rice','Lease the land'],
+      states:['Drought','Normal rain','Heavy rain'], p:[0.25,0.5,0.25],
+      pay:[[10,80,120],[40,60,70],[20,70,90],[-20,50,150],[40,40,40]],
+      stages:[['emv','keep',3],['min','keep',2],['regret','best',1]]
+    },
+    phone: {
+      title:'Phone launch strategy', emoji:'📱', bg:'var(--lav)',
+      desc:'5 options · 4 market states · ends in a tied final decision',
+      unit:'million USD',
+      alts:['Premium model','Mid-range model','Budget model','Delay launch','Phone + bundle'],
+      states:['Recession','Stable','Boom','Disruption'], p:[0.2,0.4,0.3,0.1],
+      pay:[[-30,60,140,10],[20,70,90,30],[40,55,60,45],[25,25,25,25],[10,75,100,0]],
+      stages:[['max','keep',3],['emv','best',1]]
+    },
+    blank: {
+      title:'Blank / custom', emoji:'✏️', bg:'var(--butter)',
+      desc:'Start from an empty 2 × 2 table and build your own problem',
+      unit:'thousand USD', alts:['A1','A2'], states:['S1','S2'], p:['',''],
+      pay:[['',''],['','']], stages:[]
+    }
+  };
+
+  let M; // model
+  let current = 'coffee';
+
+  function load(key){
+    current = key;
+    const e = EXAMPLES[key];
+    const alts = e.alts.map(n => ({id:uid(), name:n}));
+    const states = e.states.map((n,j) => ({id:uid(), name:n, p:String(e.p[j])}));
+    const pay = {};
+    alts.forEach((a,i) => { pay[a.id] = {}; states.forEach((s,j) => pay[a.id][s.id] = String(e.pay[i][j])); });
+    M = {unit:e.unit, alts, states, pay,
+         stages:e.stages.map(([c,a,k]) => ({id:uid(), crit:c, action:a, k:String(k)}))};
+    $('unit').value = M.unit;
+    document.querySelectorAll('.ex').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+    renderTable(); renderStages(); update();
+  }
+
+  /* ---------------- RENDER INPUTS ---------------- */
+  function renderExamples(){
+    $('exampleList').innerHTML = Object.entries(EXAMPLES).map(([k,e]) =>
+      `<button class="ex" type="button" data-key="${k}" aria-pressed="false">
+         <span class="emoji" style="background:${e.bg}">${e.emoji}</span>
+         <b>${esc(e.title)}</b><span>${esc(e.desc)}</span></button>`).join('');
+  }
+
+  function renderTable(){
+    const oneA = M.alts.length === 1, oneS = M.states.length === 1;
+    let h = `<thead><tr><th scope="col">Alternative ↓ / State →</th>` +
+      M.states.map(s => `<th scope="col"><div class="cellwrap">
+        <input class="name" data-sname="${s.id}" value="${esc(s.name)}" aria-label="State name">
+        <button class="x" type="button" data-rmstate="${s.id}" ${oneS?'disabled':''} aria-label="Remove state ${esc(s.name)}" title="Remove state">×</button></div></th>`).join('') +
+      `</tr></thead><tbody>`;
+    h += `<tr class="prob-row"><th scope="row">Probability</th>` +
+      M.states.map(s => `<td><input class="pay" type="number" step="0.01" min="0" max="1" inputmode="decimal" data-prob="${s.id}" value="${esc(s.p)}" aria-label="Probability of ${esc(s.name)}"></td>`).join('') + `</tr>`;
+    h += M.alts.map(a => `<tr><th scope="row"><div class="cellwrap">
+        <input class="name" data-aname="${a.id}" value="${esc(a.name)}" aria-label="Alternative name">
+        <button class="x" type="button" data-rmalt="${a.id}" ${oneA?'disabled':''} aria-label="Remove alternative ${esc(a.name)}" title="Remove alternative">×</button></div></th>` +
+      M.states.map(s => `<td><input class="pay" type="number" step="any" inputmode="decimal" data-alt="${a.id}" data-state="${s.id}" value="${esc(M.pay[a.id][s.id])}" aria-label="Payoff of ${esc(a.name)} in ${esc(s.name)}"></td>`).join('') + `</tr>`).join('');
+    $('payoffTable').innerHTML = h + '</tbody>';
+  }
+
+  function renderStages(){
+    $('stages').innerHTML = M.stages.map((r,i) => `<li class="stage">
+      <label>Criterion <select data-stage="${r.id}" data-f="crit" aria-label="Stage ${i+1} criterion">
+        ${ORDER.map(k => `<option value="${k}" ${r.crit===k?'selected':''}>${CRIT[k].name}</option>`).join('')}</select></label>
+      <label>Action <select data-stage="${r.id}" data-f="action" aria-label="Stage ${i+1} action">
+        <option value="keep" ${r.action==='keep'?'selected':''}>Keep the best k</option>
+        <option value="best" ${r.action==='best'?'selected':''}>Select the best</option></select></label>
+      <label ${r.action==='best'?'hidden':''}>k <input type="number" min="1" step="1" data-stage="${r.id}" data-f="k" value="${esc(r.k)}" aria-label="Stage ${i+1} k"></label>
+      <span class="actions">
+        <button class="x" type="button" data-move="${r.id}" data-d="-1" ${i===0?'disabled':''} aria-label="Move stage up" title="Move up">↑</button>
+        <button class="x" type="button" data-move="${r.id}" data-d="1" ${i===M.stages.length-1?'disabled':''} aria-label="Move stage down" title="Move down">↓</button>
+        <button class="x" type="button" data-rmstage="${r.id}" aria-label="Remove stage" title="Remove stage">×</button>
+      </span></li>`).join('') || `<li class="note">No stages yet. Add one to start filtering.</li>`;
+  }
+
+  /* ---------------- CALCULATIONS ---------------- */
+  const altName = (a,i) => a.name.trim() || `Alternative ${i+1}`;
+
+  function calculate(){
+    const errors = [], warns = [];
+    let payOK = true, probOK = true;
+
+    // validate payoffs
+    document.querySelectorAll('[data-alt]').forEach(el => {
+      const bad = !Number.isFinite(num(el.value));
+      el.classList.toggle('invalid', bad); el.setAttribute('aria-invalid', String(bad));
+      if (bad) payOK = false;
+    });
+    if (!payOK) errors.push('Some payoff cells are empty or not numbers (marked in red). Blank does not mean zero.');
+
+    // validate probabilities
+    let total = 0, probCellsOK = true;
+    document.querySelectorAll('[data-prob]').forEach(el => {
+      const v = num(el.value), bad = !Number.isFinite(v) || v < 0 || v > 1;
+      el.classList.toggle('invalid', bad); el.setAttribute('aria-invalid', String(bad));
+      if (bad) probCellsOK = false; else total += v;
+    });
+    if (!probCellsOK){ probOK = false; errors.push('Each probability must be a number between 0 and 1.'); }
+    else if (Math.abs(total - 1) > EPS){ probOK = false; errors.push(`Probabilities add up to ${+total.toFixed(6)}, not 1. EMV is unavailable until they sum to 1.`); }
+
+    // names
+    const an = M.alts.map(a => a.name.trim().toLowerCase()), sn = M.states.map(s => s.name.trim().toLowerCase());
+    if (an.some(n => !n) || sn.some(n => !n)) warns.push('Some names are empty; default labels are used.');
+    if (new Set(an.filter(Boolean)).size < an.filter(Boolean).length) warns.push('Two alternatives share the same name. Rename them to avoid confusion.');
+    if (new Set(sn.filter(Boolean)).size < sn.filter(Boolean).length) warns.push('Two states share the same name. Rename them to avoid confusion.');
+
+    let stats = [], best = [];
+    if (payOK){
+      const ps = M.states.map(s => num(s.p));
+      best = M.states.map(s => Math.max(...M.alts.map(a => num(M.pay[a.id][s.id]))));
+      stats = M.alts.map((a,i) => {
+        const v = M.states.map(s => num(M.pay[a.id][s.id]));
+        const reg = v.map((x,j) => best[j] - x);
+        return {id:a.id, idx:i, name:altName(a,i), vals:v, regrets:reg,
+          max:Math.max(...v), min:Math.min(...v), regret:Math.max(...reg),
+          emv: probOK ? v.reduce((s,x,j) => s + x*ps[j], 0) : NaN};
+      });
+      if (!stats.every(s => [s.max,s.min,s.regret,...(probOK?[s.emv]:[])].every(Number.isFinite))){
+        payOK = false; errors.push('Numbers are too large to calculate. Use smaller payoff magnitudes.'); stats = [];
+      }
+    }
+    return {errors, warns, payOK, probOK, total, stats, best};
+  }
+
+  // groups of tied alternatives, best first, original order inside a tie
+  function rank(stats, key){
+    const d = CRIT[key].dir;
+    const sorted = [...stats].sort((a,b) => d*(b[key]-a[key]) || a.idx - b.idx);
+    const groups = [];
+    sorted.forEach(s => {
+      const g = groups[groups.length-1];
+      if (g && Math.abs(s[key] - g.value) <= EPS) g.items.push(s); else groups.push({value:s[key], items:[s]});
+    });
+    return groups;
+  }
+
+  function runStages(stats, probOK){
+    let left = [...stats];
+    const steps = [{left, removed:[], title:'Start', desc:'All original alternatives.'}];
+    for (const [i,r] of M.stages.entries()){
+      const k = r.action === 'best' ? 1 : num(r.k);
+      if (!Number.isSafeInteger(k) || k < 1) return {error:`Stage ${i+1}: k must be a positive whole number.`};
+      if (r.crit === 'emv' && !probOK) return {error:`Stage ${i+1} uses EMV, but the probabilities are not valid. Fix them to see the sequence.`};
+      const c = CRIT[r.crit];
+      const ord = [...left].sort((a,b) => c.dir*(b[r.crit]-a[r.crit]) || a.idx-b.idx);
+      const cutoff = ord[Math.min(k, left.length)-1][r.crit];
+      const kept = left.filter(a => c.dir*(a[r.crit]-cutoff) >= -EPS);
+      const removed = left.filter(a => !kept.includes(a));
+      let desc = `${c.name}: ${r.action==='best'?'select the best':`keep the best ${k}`}. ${c.stat} (${c.dir===1?'higher':'lower'} is better), cutoff ${fmt(cutoff)}.`;
+      if (kept.length > k) desc += ` Tie at the cutoff: ${kept.length} survive.`;
+      if (!removed.length) desc += k >= left.length ? ` k ≥ ${left.length} survivors, nobody is eliminated.` : ' Nobody is eliminated.';
+      steps.push({left:kept, removed, key:r.crit, title:`Stage ${i+1}`, desc});
+      left = kept;
+    }
+    const last = M.stages[M.stages.length-1];
+    const label = !last ? 'No stages applied' : last.action === 'keep' ? 'Final retained alternatives' : left.length > 1 ? 'Tied final decision' : 'Final decision';
+    return {steps, left, label};
+  }
+
+  /* ---------------- OUTPUT ---------------- */
+  const list = items => items.map(a => esc(a.name)).join(', ');
+  function unitText(){ return esc(M.unit.trim() || 'unspecified units'); }
+
+  function update(){
+    document.querySelectorAll('.unitTxt').forEach(e => e.innerHTML = unitText());
+    const R = calculate();
+    // validation panel
+    const box = [];
+    R.errors.forEach(m => box.push(`<div class="msg err">⚠ ${esc(m)}</div>`));
+    R.warns.forEach(m => box.push(`<div class="msg warn">✎ ${esc(m)}</div>`));
+    if (!R.errors.length) box.push(`<div class="msg ok">✓ All inputs are valid. Probabilities sum to 1.</div>`);
+    $('validation').innerHTML = box.join('');
+
+    if (!R.payOK){
+      const m = '<p class="msg err">Results are unavailable until every payoff cell has a valid number.</p>';
+      $('critCards').innerHTML = ORDER.map(k => `<article class="crit unavailable"><span class="chip">${CRIT[k].name}</span><p>Unavailable: complete the payoff table.</p></article>`).join('');
+      ['summary','scoreboard','regretTable','filterOut'].forEach(id => $(id).innerHTML = m);
+      $('flowDiagram').innerHTML = m; setHero('Fix the inputs'); return;
+    }
+    const S = R.stats;
+
+    // criteria cards
+    const winners = {};
+    $('critCards').innerHTML = ORDER.map(k => {
+      const c = CRIT[k];
+      if (k === 'emv' && !R.probOK){ winners[k] = null;
+        return `<article class="crit unavailable"><span class="chip">${c.name}</span><div class="win">Unavailable</div><p>Fix the probabilities (each 0–1, total = 1).</p></article>`; }
+      const g = rank(S, k); winners[k] = g[0].items.map(a => a.id);
+      let pos = 1;
+      const ranking = g.map(gr => { const li = `<li value="${pos}">${gr.items.length>1?'<b>Tie:</b> ':''}${gr.items.map(a => `${esc(a.name)} (${fmt(a[k])})`).join(' = ')}</li>`; pos += gr.items.length; return li; }).join('');
+      return `<article class="crit ${c.cls}">
+        <span class="chip">${c.name}</span>
+        <div class="win">${list(g[0].items)}</div>
+        <div class="val">${c.stat}: ${fmt(g[0].value)} ${unitText()}</div>
+        ${g[0].items.length>1?`<span class="tie">Tie · ${g[0].items.length} recommended alternatives</span>`:''}
+        <p>${c.expl}</p>
+        <details><summary>Full ranking</summary><ol>${ranking}</ol></details>
+      </article>`;
+    }).join('');
+
+    // summary table with best highlighted
+    const bestVal = {};
+    ORDER.forEach(k => { if (k==='emv' && !R.probOK) return; bestVal[k] = rank(S,k)[0].value; });
+    const cols = ['emv','max','min','regret'];
+    $('summary').innerHTML = `<table><thead><tr><th>Alternative</th>${cols.map(k => `<th class="numc">${CRIT[k].stat}</th>`).join('')}</tr></thead><tbody>` +
+      S.map(a => `<tr><th scope="row">${esc(a.name)}</th>${cols.map(k => {
+        const isBest = k in bestVal && Math.abs(a[k]-bestVal[k]) <= EPS;
+        return `<td class="numc ${isBest?'best':''}">${k==='emv'&&!R.probOK?'—':fmt(a[k])}</td>`; }).join('')}</tr>`).join('') + `</tbody></table>`;
+
+    // scoreboard
+    $('scoreboard').innerHTML = `<table><thead><tr><th>Alternative</th>${ORDER.map(k => `<th style="text-align:center">${CRIT[k].name}</th>`).join('')}<th style="text-align:center">Wins</th></tr></thead><tbody>` +
+      S.map(a => { let w = 0; const cells = ORDER.map(k => { const on = winners[k] && winners[k].includes(a.id); if (on) w++; return `<td style="text-align:center">${winners[k]===null?'—':on?'<span class="check" aria-label="recommended">✓</span>':''}</td>`; }).join('');
+        return `<tr><th scope="row">${esc(a.name)}</th>${cells}<td style="text-align:center;font-weight:800">${w}</td></tr>`; }).join('') + `</tbody></table>`;
+
+    // regret table
+    $('regretTable').innerHTML = `<table><thead><tr><th>Alternative</th>${M.states.map((s,j) => `<th class="numc">${esc(s.name.trim()||'State '+(j+1))}<br><span style="text-transform:none">best = ${fmt(R.best[j])}</span></th>`).join('')}<th class="numc">Max regret</th></tr></thead><tbody>` +
+      S.map(a => `<tr><th scope="row">${esc(a.name)}</th>${a.regrets.map(r => `<td class="numc">${fmt(r)}</td>`).join('')}<td class="numc ${Math.abs(a.regret-bestVal.regret)<=EPS?'best':''}">${fmt(a.regret)}</td></tr>`).join('') + `</tbody></table>`;
+
+    // staged filtering
+    const F = runStages(S, R.probOK);
+    if (F.error){
+      $('filterOut').innerHTML = `<div class="msg err" style="margin-top:14px">⚠ ${esc(F.error)}</div>`;
+      $('flowDiagram').innerHTML = `<p class="msg err">${esc(F.error)}</p>`; setHero('Fix the stages'); return;
+    }
+    const finalTxt = `${F.label}: ${list(F.left)}`;
+    const vals = (items,key) => items.length ? items.map(a => `${esc(a.name)}${key?` <span class="note">(${fmt(a[key])})</span>`:''}`).join(', ') : '<span class="note">None</span>';
+
+    // survivor track
+    const elimAt = {}; F.steps.forEach((s,i) => s.removed.forEach(a => elimAt[a.id] = i));
+    const nSteps = F.steps.length;
+    const track = `<table class="track"><caption class="note" style="text-align:left;padding-bottom:6px">Elimination track: ● survives · ✕ eliminated at that stage</caption><thead><tr><th>Alternative</th>${F.steps.map(s => `<th>${s.title}</th>`).join('')}</tr></thead><tbody>` +
+      S.map(a => `<tr><th scope="row">${esc(a.name)}</th>${F.steps.map((s,i) => {
+        const e = elimAt[a.id];
+        if (e === undefined || i < e) return `<td><span class="dotc ${e===undefined && i===nSteps-1?'final':''}" aria-label="survives"></span></td>`;
+        if (i === e) return `<td><span class="xmark" aria-label="eliminated">✕</span></td>`;
+        return `<td><span class="gone"></span></td>`; }).join('')}</tr>`).join('') + `</tbody></table>`;
+
+    $('filterOut').innerHTML = `
+      <div class="outcome ${M.stages.length?'':'neutral'}"><span class="dot"></span>${M.stages.length ? finalTxt : 'No stages yet: all alternatives remain. Add a stage to filter.'}</div>
+      <div class="two">
+        <div class="scroll"><table><thead><tr><th>#</th><th>Stage rule</th><th>Survivors</th><th>Eliminated</th></tr></thead><tbody>` +
+        F.steps.map((s,i) => `<tr ${i===nSteps-1?'style="background:var(--orange-soft)"':''}><th scope="row">${i}</th><td>${esc(s.desc)}</td><td>${vals(s.left,s.key)}</td><td>${i?vals(s.removed,s.key):'—'}</td></tr>`).join('') +
+        `</tbody></table></div>
+        <div class="scroll">${track}</div>
+      </div>`;
+
+    // flow diagram
+    $('flowDiagram').innerHTML = F.steps.map((s,i) => {
+      const isFinal = i === nSteps-1;
+      const nodeCls = isFinal && M.stages.length ? 'final' : i===0 ? 'start' : '';
+      const nodeTitle = isFinal && M.stages.length ? F.label : i===0 ? 'All alternatives' : 'Survivors';
+      const step = `<div class="fstep">
+        <div class="rule"><b>${i===0?'Step 0 · Start':`Step ${i} · ${CRIT[M.stages[i-1].crit].name}`}</b><br>${esc(s.desc)}</div>
+        <div class="vline"></div>
+        <div class="node ${nodeCls}"><small>${esc(nodeTitle)} (${s.left.length})</small>${list(s.left)}</div>
+        ${i ? `<div class="dline"></div><div class="elim ${s.removed.length?'':'none'}"><small>Eliminated at step ${i}</small>${s.removed.length?list(s.removed):'None'}</div>` : ''}
+      </div>`;
+      return (i ? `<div class="arrow"><span></span></div>` : '') + step;
+    }).join('');
+    // align arrows with node centre
+    requestAnimationFrame(() => {
+      const first = $('flowDiagram').querySelector('.node'), flow = $('flowDiagram');
+      if (first){ const y = first.offsetTop + first.offsetHeight/2; flow.querySelectorAll('.arrow').forEach(a => a.style.setProperty('--ay', y+'px')); }
+    });
+    setHero(M.stages.length ? list(F.left) : 'Add a stage');
+  }
+
+  function setHero(t){ $('heroDecision').innerHTML = t; }
+
+  /* ---------------- EVENTS ---------------- */
+  $('exampleList').addEventListener('click', e => { const b = e.target.closest('.ex'); if (b) load(b.dataset.key); });
+
+  $('payoffTable').addEventListener('input', e => {
+    const d = e.target.dataset, v = e.target.value;
+    if (d.aname) M.alts.find(a => a.id === d.aname).name = v;
+    if (d.sname) M.states.find(s => s.id === d.sname).name = v;
+    if (d.prob) M.states.find(s => s.id === d.prob).p = v;
+    if (d.alt) M.pay[d.alt][d.state] = v;
+    update();
+  });
+  $('payoffTable').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.rmalt && M.alts.length > 1){ M.alts = M.alts.filter(a => a.id !== b.dataset.rmalt); delete M.pay[b.dataset.rmalt]; }
+    if (b.dataset.rmstate && M.states.length > 1){ const id = b.dataset.rmstate; M.states = M.states.filter(s => s.id !== id); Object.values(M.pay).forEach(r => delete r[id]); }
+    renderTable(); update();
+  });
+  $('addAlt').addEventListener('click', () => {
+    const a = {id:uid(), name:`A${M.alts.length+1}`}; M.alts.push(a);
+    M.pay[a.id] = Object.fromEntries(M.states.map(s => [s.id,''])); renderTable(); update();
+    document.querySelector(`[data-aname="${a.id}"]`).focus();
+  });
+  $('addState').addEventListener('click', () => {
+    const s = {id:uid(), name:`S${M.states.length+1}`, p:''}; M.states.push(s);
+    M.alts.forEach(a => M.pay[a.id][s.id] = ''); renderTable(); update();
+    document.querySelector(`[data-sname="${s.id}"]`).focus();
+  });
+  $('equalProb').addEventListener('click', () => {
+    const n = M.states.length, base = Math.floor(1e6/n)/1e6;
+    M.states.forEach((s,i) => s.p = String(i === n-1 ? +(1 - base*(n-1)).toFixed(6) : base));
+    renderTable(); update();
+  });
+  $('unit').addEventListener('input', e => { M.unit = e.target.value; update(); });
+
+  $('stages').addEventListener('input', e => {
+    const d = e.target.dataset; if (!d.stage) return;
+    const r = M.stages.find(x => x.id === d.stage); r[d.f] = e.target.value;
+    if (d.f === 'action'){ renderStages(); document.querySelector(`[data-stage="${r.id}"][data-f="action"]`).focus(); }
+    if (d.f === 'k'){ const k = num(r.k); e.target.classList.toggle('invalid', !(Number.isSafeInteger(k) && k >= 1)); }
+    update();
+  });
+  $('stages').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.rmstage) M.stages = M.stages.filter(r => r.id !== b.dataset.rmstage);
+    if (b.dataset.move){ const i = M.stages.findIndex(r => r.id === b.dataset.move), j = i + Number(b.dataset.d);
+      if (j >= 0 && j < M.stages.length) [M.stages[i], M.stages[j]] = [M.stages[j], M.stages[i]]; }
+    renderStages(); update();
+  });
+  $('addStage').addEventListener('click', () => { M.stages.push({id:uid(), crit:'emv', action:'keep', k:'2'}); renderStages(); update(); });
+
+  /* ---------------- DECOR ---------------- */
+  const fills = {3:'f1',12:'f2',20:'f4',31:'f3',44:'f1',52:'f2',58:'f4'};
+  $('gridbg').innerHTML = Array.from({length:63}, (_,i) => `<div class="${fills[i]||''}"></div>`).join('');
+  $('bars').innerHTML = [14,26,40,22,34,18,30,12].map(h => `<i style="height:${h}px"></i>`).join('');
+
+  renderExamples();
+  load('coffee');
+})();
+</script>
+</body>
+</html>
